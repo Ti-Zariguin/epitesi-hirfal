@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Építési hírfal</title>
+<meta name="description" content="Szegedi és országos építési és közlekedési hírek, forrással.">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single column of road-sign cards (topic band, word | status sign | figures row, title, points, source); tabs for building news, traffic news and the sign legend. */
+:root {
+  --bg: #efefec; --fg: #1c1d1f; --muted: #5d6066; --rule: #d3d3cd; --surface: #ffffff;
+  --accent: #c8102e;
+  /* sign palette, fixed in both themes like real signs */
+  --sign-bg: #ffffff; --sign-fg: #141414; --sign-muted: #555555;
+  --kresz-blue: #0057a8; --kresz-green: #00804a; --kresz-brown: #7a4a1f; --kresz-yellow: #ffcc00; --kresz-red: #c8102e; --kresz-white: #ffffff;
+  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Serif 4", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #151618; --fg: #ecece9; --muted: #a3a6ab; --rule: #34363a; --surface: #1d1f22; --accent: #ff5a6e; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #151618; --fg: #ecece9; --muted: #a3a6ab; --rule: #34363a; --surface: #1d1f22; --accent: #ff5a6e; color-scheme: dark; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+main { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: grid; gap: 10px; border-bottom: 4px solid var(--fg); padding-bottom: 14px; }
+.kicker { font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1; margin: 0; letter-spacing: -0.02em; text-transform: uppercase; }
+h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; }
+.meta { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.tabs { display: flex; border-bottom: 1px solid var(--rule); overflow-x: auto; }
+.tab { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; color: var(--muted); padding: 8px 14px 9px; cursor: pointer; white-space: nowrap; }
+.tab:first-child { padding-left: 0; }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tab:hover { color: var(--fg); }
+.tab .n { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 400; opacity: 0.75; margin-left: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-display); font-weight: 500; font-size: 0.88rem; border: 1px solid var(--rule); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 10px; height: 10px; border: 1px solid var(--fg); display: inline-block; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip .n { font-family: var(--font-mono); font-size: 0.78rem; opacity: 0.75; }
+.tab:focus-visible, .chip:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#news { display: grid; gap: 18px; }
+
+/* Sign card */
+.sg { --band: var(--kresz-blue); background: var(--sign-bg); color: var(--sign-fg); border: 3px solid var(--sign-fg); min-width: 0; overflow-wrap: anywhere; }
+.sg.melyepites { --band: var(--kresz-green); }
+.sg.epitoipar { --band: var(--kresz-brown); }
+.sg .band { background: var(--band); color: var(--kresz-white); padding: 7px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.band .bl { min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+.band a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.band a::after { content: " ↗"; }
+.band .br { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.sticker { background: var(--kresz-red); color: var(--kresz-white); font-weight: 800; font-size: 0.7rem; letter-spacing: 0.1em; padding: 1px 9px; border-radius: 999px; border: 2px solid var(--kresz-white); }
+.sg .inner { padding: 12px 16px 16px; display: grid; gap: 10px; }
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.top > * { height: 30px; display: flex; align-items: center; min-width: 0; }
+.top .word { justify-self: start; }
+.top .st { justify-self: center; }
+.top .figs { justify-self: end; justify-content: flex-end; gap: 6px; }
+.word { box-sizing: border-box; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--band); border: 2px solid var(--band); padding: 0 9px; white-space: nowrap; }
+.st { gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.st svg { width: 28px; height: 28px; flex: none; }
+.fig { box-sizing: border-box; height: 30px; display: inline-flex; align-items: center; background: var(--kresz-yellow); color: var(--sign-fg); font-family: var(--font-display); font-weight: 800; font-size: 0.9rem; padding: 0 9px; border: 2px solid var(--sign-fg); white-space: nowrap; }
+.sg h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.2; margin: 0; text-transform: uppercase; letter-spacing: -0.01em; text-wrap: balance; }
+.sg h3 a { color: inherit; text-decoration: none; }
+.sg h3 a:hover { text-decoration: underline; text-decoration-color: var(--band); }
+.lead { margin: 0; font-weight: 600; font-size: 0.97rem; }
+.sg ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 0.97rem; }
+.sg ul > li { border-left: 4px solid var(--band); padding-left: 10px; }
+.sg .sum { margin: 0; font-size: 0.97rem; }
+.sg .src { font-family: var(--font-mono); font-size: 0.75rem; color: var(--sign-muted); }
+
+/* Legend tab */
+.legend-sec { display: grid; gap: 12px; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 10px; }
+.lg { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 2px 12px; align-items: start; background: var(--surface); border: 1px solid var(--rule); padding: 10px 12px; }
+.lg svg { width: 40px; height: 40px; grid-row: span 2; }
+.lg b { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.04em; }
+.lg span { font-size: 0.92rem; color: var(--muted); }
+.lg .sw { width: 40px; height: 24px; border: 2px solid var(--fg); grid-row: span 2; box-sizing: border-box; }
+.note { margin: 0; color: var(--muted); font-size: 0.95rem; max-width: 62ch; }
+
+.empty { color: var(--muted); padding: 24px 0; }
+.status { font-size: 0.9rem; color: var(--muted); }
+.status.err { color: var(--accent); }
+footer { font-size: 0.85rem; color: var(--muted); }
+@media (max-width: 480px) {
+  .top { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; }
+  .top .st { justify-self: center; }
+  .stxt { display: none; }
+  .word, .fig { font-size: 0.74rem; padding: 0 6px; }
+  .top .figs { gap: 4px; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="s-koncepcio" viewBox="0 0 40 40"><path d="M20 2 L38 20 L20 38 L2 20 Z" fill="#fff" stroke="#141414" stroke-width="1.5"/><path d="M20 8 L32 20 L20 32 L8 20 Z" fill="#ffcc00"/></symbol>
+    <symbol id="s-tervezes" viewBox="0 0 40 40"><rect x="3" y="3" width="34" height="34" rx="3" fill="#0057a8" stroke="#fff" stroke-width="2"/><path d="M10 30 V9 L31 30 Z" fill="#fff"/><path d="M14 26 V18.6 L21.4 26 Z" fill="#0057a8"/><path d="M10 13 H13 M10 17 H12 M10 21 H13 M10 25 H12" stroke="#0057a8" stroke-width="1.2"/></symbol>
+    <symbol id="s-kozbeszerzes" viewBox="0 0 40 40"><path d="M20 4 L37 34 H3 Z" fill="#fff" stroke="#c8102e" stroke-width="4" stroke-linejoin="round"/><rect x="18.2" y="14" width="3.6" height="11" fill="#141414"/><rect x="18.2" y="27.5" width="3.6" height="3.6" fill="#141414"/></symbol>
+    <symbol id="s-kivitelezes" viewBox="0 0 40 40"><path d="M20 4 L37 34 H3 Z" fill="#ffcc00" stroke="#c8102e" stroke-width="4" stroke-linejoin="round"/><rect x="9.5" y="27" width="14" height="4" rx="2" fill="#141414"/><rect x="11" y="21.5" width="10" height="5" fill="#141414"/><rect x="11" y="17.5" width="5" height="4.5" fill="#141414"/><path d="M20.5 22.5 L26 16 L29.5 23" fill="none" stroke="#141414" stroke-width="2.2" stroke-linejoin="round"/><path d="M27.5 23 H31 L29.5 27 Z" fill="#141414"/></symbol>
+    <symbol id="s-atadva" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#00804a" stroke="#fff" stroke-width="2"/><path d="M11 20.5 L17.5 27 L29.5 14" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="s-elakadt" viewBox="0 0 40 40"><path d="M13 3 H27 L37 13 V27 L27 37 H13 L3 27 V13 Z" fill="#c8102e" stroke="#fff" stroke-width="2"/><rect x="11" y="17.5" width="18" height="5" fill="#fff"/></symbol>
+    <symbol id="s-lezaras" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#c8102e" stroke="#fff" stroke-width="2"/><rect x="9" y="17" width="22" height="6" fill="#fff"/></symbol>
+    <symbol id="s-tereles" viewBox="0 0 40 40"><rect x="3" y="7" width="34" height="26" fill="#ffcc00" stroke="#141414" stroke-width="2"/><path d="M10 25 V17 H24 V12 L31 19 L24 26 V21 H14 V25 Z" fill="#141414"/></symbol>
+    <symbol id="s-korlatozas" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#fff" stroke="#c8102e" stroke-width="5"/><text x="20" y="25.5" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" font-size="14" fill="#141414">30</text></symbol>
+    <symbol id="s-megszunt" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#fff" stroke="#141414" stroke-width="2"/><path d="M9 31 L31 9" stroke="#141414" stroke-width="3"/><path d="M12 33 L33 12" stroke="#141414" stroke-width="1.5"/><path d="M7 28 L28 7" stroke="#141414" stroke-width="1.5"/></symbol>
+  </defs>
+</svg>
+
+<main>
+  <header>
+    <div class="kicker">Témafigyelő</div>
+    <h1>Építési hírfal</h1>
+    <div class="meta" id="meta">Betöltés…</div>
+    <div class="tabs" role="tablist" aria-label="Lapok" id="tabs"></div>
+    <div class="chips" role="toolbar" aria-label="Téma szűrő" id="chips"></div>
+  </header>
+  <div id="news"></div>
+  <div class="empty" id="empty" hidden></div>
+  <div id="legend" hidden></div>
+  <div class="status" id="status" role="status"></div>
+  <footer id="foot">Az utolsó 40 hír látszik, legfrissebb elöl. Csak ellenőrizhető forrású hír kerül fel. Az összefoglalók a forrás állításait adják vissza.</footer>
+</main>
+
+<script type="application/json" id="hirfal-data">[{"added_at": 1792277000001, "date": "2026-07-01", "figs": ["~100 Mrd Ft", "2026–2029"], "location": "47-es főút, Algyői Tisza-híd", "maps_query": "Algyői Tisza-híd", "points": ["A kormányhivatal eljárást indított a **47-es főút jobb pályájára** és a **meglévő Algyői Tisza-híd átépítésére**, üzemi utakkal együtt.", "A Világgazdaság szerint a teljes projekt **nagyjából 100 milliárd Ft**, új négysávos hídból áll, és **2026 és 2029 között** épülhet.", "Az eljárás eredményéről még **nincs hír**."], "source": "Csongrád-Csanád Vármegyei Kormányhivatal; Világgazdaság", "status": "tervezes", "summary": "A Csongrád-Csanád Vármegyei Kormányhivatal hirdetménye szerint engedélyezési eljárás indult a 47-es főút jobb pályájára és az Algyői Tisza-híd átépítésére.", "title": "Algyői Tisza-híd: engedélyezési eljárás a 47-es főút jobb pályájára és a híd átépítésére", "topic": "szeged", "url": "https://kormanyhivatalok.hu/system/files/dokumentum/csongrad-csanad/2026-07/hirdetmeny-cs_tut_00107-24_2026_hirdetmeny_alairt.pdf", "word": "Hídépítés"}, {"added_at": 1792256400008, "date": "2026-03", "figs": ["9 km"], "location": "Szeged, BYD-gyár és a szennyvíztisztító telep között", "maps_query": "BYD gyár Szeged", "points": ["Megkezdődött a **9 km-es szennyvízcsatorna** építése, amely a BYD-gyárat a szennyvíztisztító telephez köti.", "A csatorna nélkül a **gyár nem tudna működni**."], "source": "Világgazdaság", "status": "kivitelezes", "summary": "A kilenc kilométer hosszú szennyvízcsatorna a gyárterületet köti a szennyvíztisztító telephez, a projekt kulcsfontosságú eleme.", "title": "Szegedi BYD-gyár: megkezdődött a szennyvízcsatorna építése", "topic": "szeged", "url": "https://www.vg.hu/vilaggazdasag-magyar-gazdasag/2026/03/byd-gyar-szeged-megkezdodott-szennyvizcsatorna", "word": "Csatornaépítés"}, {"added_at": 1792256400010, "date": "2025-09", "figs": ["~11 Mrd Ft", "8 szakasz"], "location": "Szarvas–Szentes, Tótkomlós–Hódmezővásárhely, Balástya–Forráskút", "maps_query": "Csongrád-Csanád vármegye", "points": ["A Magyar Közút csaknem **11 milliárd Ft-ból** és TOP Plusz-forrásból **nyolc útszakaszt** újít fel a vármegyében.", "Köztük van a **Szarvas–Szentes**, a **Tótkomlós–Hódmezővásárhely** és a **Balástya–Forráskút** szakasz.", "A munkák befejezését **2026-ra** tervezték."], "source": "Magyar Építők", "summary": "Csaknem 11 milliárd forintból, TOP Plusz-forrásból nyolc szakasz újul meg, köztük Szarvas–Szentes, Tótkomlós–Hódmezővásárhely és Balástya–Forráskút. A befejezést 2026-ra tervezték.", "title": "Magyar Közút: nyolc Csongrád-Csanád vármegyei útszakasz újul meg", "topic": "szeged", "url": "https://magyarepitok.hu/utepites/2025/09/ujabb-lista-a-magyar-kozuttol-ezeket-a-csongrad-csanad-varmegyei-utakat-ujitjak-2026-elso-felevel-bezarolag", "word": "Útfelújítás"}, {"added_at": 1792256400005, "date": "2026-10", "figs": [], "location": "Budapest, Déli pályaudvar, Kis-Gellért-hegyi alagút", "maps_query": "Déli pályaudvar, Budapest", "points": ["Hamarosan kiírják a **kivitelezési tendert**.", "Átépítik a **Kis-Gellért-hegyi alagút** vasúti pályáját.", "A cél a nagyobb kapacitás, és hogy az **emeletes motorvonatok** is be tudjanak járni."], "source": "Magyar Építők", "status": "tervezes", "summary": "A hamarosan kivitelezési tenderrel induló beruházásban átépítik a Kis-Gellért-hegyi alagút vasúti pályáját, hogy kapacitásban és menetrendszerűségben javuljon a forgalom, és elférjenek az emeletes motorvonatok.", "title": "Átfogó fejlesztést kap a Déli pályaudvar", "topic": "melyepites", "url": "https://magyarepitok.hu/kotott-palya/2026/10/atfogo-fejlesztest-kap-a-deli-palyaudvar-megnyilik-az-ut-az-emeletes-motorvonatok-szamara", "word": "Vasútfejlesztés"}, {"added_at": 1792256400004, "date": "2026-10", "figs": ["~31 Mrd Ft"], "location": "Budapest, Gubacsi vasúti híd", "maps_query": "Gubacsi híd, Budapest", "points": ["A régi Gubacsi vasúti híd helyére nagyjából **31 milliárd Ft-ból új híd** épülhet.", "A projekttel **uniós CEF-forrásra** pályáznak.", "Vitézy Dávid szerint a **kivitelezési közbeszerzést már lefolytatták**, a munka hamarosan indulhat."], "source": "Világgazdaság", "status": "kozbeszerzes", "summary": "Vitézy Dávid bejelentése szerint a régi Gubacsi vasúti híd helyére mintegy 31 milliárd forintból új híd épül, uniós CEF-forrásra pályázva. A miniszter szerint a kivitelezési közbeszerzést már lefolytatták.", "title": "Új vasúti híd épülhet a Gubacsi-híd helyén", "topic": "melyepites", "url": "https://www.vg.hu/vilaggazdasag-magyar-gazdasag/2026/10/vasuti-beruhazasok-vitezy-david-unios-forras", "word": "Hídépítés"}, {"added_at": 1792256400006, "date": "2026-10", "figs": ["6 perc", "okt. 19."], "location": "Jászberény–Újszász vasútvonal", "maps_query": "Újszás vasútállomás", "points": ["A pályafelújítás után közel 5 km-en **szűnnek meg a sebességkorlátozások**, ez **6 perc** menetidőt spórol.", "**Október 19-től** a teljes vonalon újra járnak a vonatok."], "source": "szoljon.hu", "status": "atadva", "summary": "A pályafelújítás után közel öt kilométeren szűnnek meg a sebességkorlátozások, ami hat perc menetidő-többletet számol fel. A tervek szerint október 19-től indul újra a teljes vonalon a vonatközlekedés.", "title": "Jászberény és Újszász között megszűnnek a lassújelek", "topic": "melyepites", "url": "https://szoljon.hu/helyi-kozelet/2026/10/vonatkozlekedes-jaszbereny-ujszasz-karbantartas", "word": "Pályafelújítás"}, {"added_at": 1792256400001, "date": "2026-10-01", "figs": [], "location": "Kistelek, belterületi utak", "maps_query": "Kistelek", "points": ["Kisteleken a TOP Plusz programból indul a **belterületi utak fejlesztése**."], "source": "Nemzeti Közleménytár (MTI)", "status": "kivitelezes", "summary": "A Nemzeti Közleménytár szerint Kisteleken TOP Plusz-forrásból indul a belterületi utak fejlesztése.", "title": "Megkezdődik Kisteleken a belterületi utak fejlesztése", "topic": "szeged", "url": "https://mti.hu/nemzeti-kozlemenytar?page=1&area=54", "word": "Útfejlesztés"}, {"added_at": 1792347653973, "date": "2026-09", "figs": ["2027 tavasz"], "location": "M1 autópálya, Bicske", "maps_query": "M1 Bicske csomópont", "points": ["A **Budapest felé** vezető felhajtó a tervek szerint már **idén év végén** használható lesz.", "A teljes csomópontot várhatóan **2027 tavaszán** adják át."], "source": "Magyar Építők", "status": "kivitelezes", "summary": "A Budapest felé vezető felhajtó a tervek szerint már idén év végén használható lesz.", "title": "Már idén felhajthatnak Budapest felé az M1-es épülő bicskei különszintű csomópontjában", "topic": "melyepites", "url": "https://magyarepitok.hu/utepites/2026/09/mar-iden-lehetseges-lesz-a-felhajtas-budapest-fele-az-m1-es-epulo-kulonszintu-csomopontjan", "word": "Csomópont"}, {"added_at": 1792347653974, "date": "2026-10", "figs": [], "location": "M3 autópálya, Gyöngyös", "maps_query": "M3 Gyöngyös csomópont", "points": ["Az **M3-as autópálya gyöngyösi csomópontja** megújul, a cikk videón mutatja be a terveket.", "Az MKIF szerint az idei autópálya-felújítások **közel fele az M3-at** érinti."], "source": "Magyar Építők", "summary": "Az M3-as autópálya gyöngyösi csomópontja megújul, a cikk videón mutatja be a terveket.", "title": "Így újul meg az M3-as gyöngyösi csomópontja", "topic": "melyepites", "url": "https://magyarepitok.hu/utepites/2026/10/igy-ujul-meg-az-m3-as-gyongyosi-csomopontja-video", "word": "Csomópont"}, {"added_at": 1792256400002, "date": "2026-10", "figs": ["okt. vége"], "location": "M49, M3 és Ököritófülpös között", "maps_query": "M49 autópálya Ököritófülpös", "points": ["Vitézy Dávid szerint az M3 és Ököritófülpös közötti **első szakaszt október végén** adják át.", "A **román határig** tartó, nagyjából 17 km-es folytatás **2029 nyárára** készülhet el.", "A **finanszírozás ütemezését** újratárgyalták, hogy egyenletesebben terhelje a költségvetést."], "source": "szon.hu", "status": "kivitelezes", "summary": "Vitézy Dávid közlekedési miniszter szerint az M49-es gyorsforgalmi út Ököritófülpösig tartó első szakaszát október végén adják át. A román határig tartó, mintegy 17 kilométeres folytatás 2029 nyarára készülhet el, a finanszírozás ütemezését újratárgyalták.", "title": "M49: október végén átadhatják az első szakaszt", "topic": "melyepites", "url": "https://www.szon.hu/helyi-kozelet/2026/10/m49-es-gyorsforgalmi-ut-okoritofulpos-beruhazas-vitezy", "word": "Autópálya"}, {"added_at": 1792256400003, "date": "2026-09-28", "figs": ["28,2 km"], "location": "M49, M3 és Ököritófülpös között (győrteleki elkerülő)", "maps_query": "Győrtelek", "points": ["Lezárult a 28,2 km-es első szakasz **műszaki átadás-átvétele**.", "**Négy különszintű és öt körforgalmi csomópont**, valamint a 3,3 km-es **győrteleki elkerülő** is elkészült.", "A kivitelező szerint **október második felében** helyezik forgalomba."], "source": "Duna Group", "status": "kivitelezes", "summary": "A kivitelező Duna Group szerint az M3 és Ököritófülpös közötti 28,2 kilométeres szakasz műszaki átadás-átvétele lezárult. A beruházásban négy különszintű és öt körforgalmi csomópont, valamint a 3,3 kilométeres győrteleki elkerülő is elkészült.", "title": "Lezárult az M49 első, 28,2 km-es szakaszának műszaki átadása", "topic": "melyepites", "url": "https://www.duna.group/folytatodik-az-m49-es-gyorsforgalmi-ut-epitese/", "word": "Autópálya"}, {"added_at": 1792347609399, "date": "2026-10-15", "figs": ["okt. 17–26."], "location": "M5 autópálya, Szeged-Észak csomópont", "maps_query": "M5 Szeged-Észak csomópont", "points": ["Az M5 **Budapest felé tartó** oldalán a Szeged-Észak csomópont egyik kihajtóját **október 17-től** várhatóan **október 26-ig** lezárják.", "Kerülőnek a rendőrség az **M43-as autópályát** javasolja."], "source": "szeged365.hu", "status": "lezaras", "summary": "Az M5 Budapest felé tartó oldalán a Szeged-Észak csomópont egyik kihajtóját október 17-től várhatóan október 26-ig lezárják.", "title": "Burkolatfelújítás miatt lezárják az M5-ös egyik kihajtó ágát Szegednél", "topic": "kozlekedes", "url": "https://szeged365.hu/2026/10/15/bonyolultabb-lesz-elindulni-a-fovaros-fele-burkolatfelujitas-miatt-lezarjak-az-m5-os-egyik-kihajto-agat-szegednel/", "word": "Kihajtózár"}, {"added_at": 1792277000004, "date": "2026-04", "figs": ["ápr. 30."], "location": "Mohács, Busó körforgalom és M6", "maps_query": "Mohács M6", "points": ["A Világgazdaság szerint **április 29-én** kezdődött a műszaki átadás-átvétel.", "A forgalom **várhatóan április 30-tól** indulhatott a Busó körforgalom és az **M6** között.", "A tényleges forgalomba helyezésről **nincs megerősítés** a forrásban."], "source": "vg.hu", "status": null, "summary": "A Világgazdaság szerint 2026 áprilisában négysávos összekötés készült Mohácson a Busó körforgalom és az M6 között.", "title": "Mohács: négysávos út köti össze az M6-ot a Busó körforgalommal", "topic": "melyepites", "url": "https://www.vg.hu/vilaggazdasag-magyar-gazdasag/2026/04/autopalya-mohacsi-duna-hid-m6-negysavos-ut-osszekotes", "word": "Gyorsforgalmi út"}, {"added_at": 1792277000003, "date": "2025-12-19", "figs": ["860 Mrd Ft"], "location": "Országos vasúthálózat (pl. Nyugati pu.–Kőbánya-Kispest, Miskolc–Nyíregyháza)", "maps_query": "Miskolc Nyíregyháza vasútvonal", "points": ["2026-ban **860 milliárd Ft** áll rendelkezésre a vasúti pályák **karbantartására és felújítására**.", "A tervek között van a **Nyugati pályaudvar és Kőbánya-Kispest** közötti felépítménycsere.", "A **Miskolc–Nyíregyháza** vonalon hídjavítás jön, és visszaállítják a **120 km/h** pályasebességet."], "source": "economx.hu", "status": "tervezes", "summary": "Az Economx szerint 2026-ra 860 milliárd forint jut a vasúti pályák fenntartására és felújítására.", "title": "MÁV: 860 milliárd forint jut 2026-ban a vasúti pályák fenntartására és felújítására", "topic": "melyepites", "url": "https://www.economx.hu/belfold/2025/12/19/mav-unios-hitel-sajat-forras-palyafelujitas-821226/", "word": "Pályafelújítás"}, {"added_at": 1792347609396, "date": "2026-10-16", "figs": ["okt. 16."], "location": "Szeged, Fonógyári út", "maps_query": "Fonógyári út, Szeged", "points": ["A **Fonógyári úti** vágányfelújítás a tervezett határidőre, **október 16-án** befejeződött.", "A felújítás alatt a 3F villamosok Tarján és Vadaspark között jártak, a többi szakaszon **pótlóbusz** közlekedett."], "source": "szeged365.hu", "status": "megszunt", "summary": "A Fonógyári úti vágányfelújítás a tervezett határidőre, október 16-án befejeződött.", "title": "Véget értek a pályafelújítási munkák a 3F-es villamosvonal Fonógyári úti szakaszán", "topic": "kozlekedes", "url": "https://szeged365.hu/2026/10/16/veget-ertek-a-palyafelujitasi-munkak-a-3f-es-villamosvonal-fonogyari-uti-szakaszan/", "word": "Villamospálya"}, {"added_at": 1792347609398, "date": "2026-10-14", "figs": ["okt. 19–22."], "location": "43-as főút (Szőregi domb) és 47-es főút (Algyői út), Szeged", "maps_query": "Algyői út, Szeged", "points": ["A **Magyar Közút** október 14-én kezdte a 43-as és a 47-es főút szegedi bevezető szakaszainak burkolatfelújítását.", "A **43-as főúton** a szőregi dombon, a Szerb utcai körforgalomtól Deszk felé nagyjából **880 méteren** dolgoznak.", "A **47-es főút** Algyői úti szakaszán mintegy **1200 méteren**, az új aszfalt **október 19–22.** között kerül fel.", "Mindkét helyen **félpályás lezárás** van, a forgalmat jelzőőrök irányítják."], "source": "szegedma.hu; szeged365.hu", "status": "korlatozas", "summary": "A Magyar Közút október 14-én kezdte a 43-as és a 47-es főút szegedi bevezető szakaszainak burkolatfelújítását.", "title": "Két főúton is felújítják az aszfaltot Szegeden, félpályás lezárás és torlódás várható", "topic": "kozlekedes", "url": "https://szegedma.hu/szeged/2026/10/utfelujitas-lezaras-szeged", "word": "Útfelújítás"}, {"added_at": 1792256400009, "date": "2026-02-05", "figs": ["2,3 Mrd Ft", "2 év"], "location": "Szeged, Belvárosi híd és Huszár Mátyás rakpart", "maps_query": "Belvárosi híd, Szeged", "points": ["Botka László szerint ez lesz **2026 legnagyobb szegedi beruházása**.", "A **Belvárosi híd** felújítása **2,3 milliárd Ft**-ba kerül, a munkát **két évre** ütemezik."], "source": "szeged365.hu", "status": "tervezes", "summary": "A polgármester szerint a Belvárosi híd felújítása 2,3 milliárd forintba kerül, a munkálatokat két évre ütemezik.", "title": "Botka László: 2026 legnagyobb beruházása a Belvárosi híd és a Huszár Mátyás rakpart felújítása", "topic": "szeged", "url": "https://szeged365.hu/2026/02/05/botka-laszlo-2026-legnagyobb-beruhazasa-a-szegedi-belvarosi-hid-es-a-huszar-matyas-rakpart-felujitasa/", "word": "Hídfelújítás"}, {"added_at": 1792347609395, "date": "2026-10-08", "figs": ["1,359 Mrd Ft", "nov. 12."], "location": "Szeged, északi városrész", "maps_query": "Északi városrész, Szeged", "points": ["Megjelent a **tervezői közbeszerzés** az északi városrész komplex rekonstrukciójára.", "A projekt **1,359 milliárd Ft**, benne csapadékvíz-gazdálkodás és közösségi kertek.", "Az ajánlatokat **november 12-ig** lehet beadni, a befejezés tervezett dátuma **2029. április 30.**"], "source": "szeged365.hu", "status": "kozbeszerzes", "summary": "Megjelent a tervezői közbeszerzés az északi városrész komplex rekonstrukciójára.", "title": "Egy teljes városnegyed megújítására készül Szeged: tervezői közbeszerzés az északi városrészre", "topic": "szeged", "url": "https://szeged365.hu/2026/10/08/egy-teljes-varosnegyed-megujitasara-keszul-szeged-megjelent-a-tervezoi-kozbeszerzes-az-eszaki-varosresz-komplex-rekonstrukciojara/", "word": "Városrész-rekonstrukció"}, {"added_at": 1792347609400, "date": "2026-10-16", "figs": ["okt. 22-ig"], "location": "Szeged, Makkosházi körút", "maps_query": "Makkosházi körút, Szeged", "points": ["A munka alatt **félpályás lezárás** és **kanyarodási korlátozás** lesz.", "A munkálatok várhatóan **október 22-re** befejeződnek, utána visszaáll a megszokott forgalmi rend."], "source": "szeged365.hu", "status": "korlatozas", "summary": "A munka alatt félpályás lezárás és kanyarodási korlátozás lesz.", "title": "Szennyvízcsatorna-rekonstrukció indul a Makkosházi körúton", "topic": "kozlekedes", "url": "https://szeged365.hu/2026/10/16/szennyvizcsatorna-rekonstrukcio-indul-a-makkoshazi-koruton-lesz-nemi-fennakadas-a-kozlekedesben/", "word": "Csatornafelújítás"}, {"added_at": 1792277000002, "date": "2025-12-12", "figs": ["~6 Mrd Ft", "2027"], "location": "Szeged", "maps_query": "Szeged", "points": ["A METRANS Szegeden **vasúti-közúti terminált** épít, az Infostart szerint Európa egyik legkorszerűbbjét.", "A beruházás **mintegy 6 milliárd Ft**, és **2027-ig** készülhet el."], "source": "infostart.hu", "status": null, "summary": "Az Infostart szerint a METRANS 2027-ig mintegy 6 milliárd forintból intermodális terminált épít Szegeden.", "title": "Szeged: intermodális vasúti-közúti terminált épít a METRANS", "topic": "szeged", "url": "https://infostart.hu/gazdasag/2025/12/12/szeged-uj-kaput-nyit-europa-fele", "word": "Terminál"}, {"added_at": 1792347609402, "date": "2026-10-16", "figs": ["2027 tavasz"], "location": "Szeged-Petőfitelep, Fő tér", "maps_query": "Petőfitelep Fő tér, Szeged", "points": ["A Fő tér felújításának **közbeszerzése folyamatban** van.", "A kivitelezés **2027 tavaszán** indulhat."], "source": "szeged365.hu", "status": "kozbeszerzes", "summary": "A Fő tér felújításának közbeszerzése folyamatban van.", "title": "Petőfitelep Fő tere megújul: Szénási Róbert a tervezett változásokról", "topic": "szeged", "url": "https://szeged365.hu/2026/10/16/ra-sem-ismerunk-majd-petofitelep-fo-terere-szenasi-robert-elarulta-milyen-latvanyos-valtozasok-johetnek-szegeden-video/", "word": "Térfelújítás"}, {"added_at": 1792256400007, "date": "2026-06", "figs": ["238,2 M Ft"], "location": "Szeged, Széchenyi tér és Károlyi utca", "maps_query": "Széchenyi tér, Szeged", "points": ["Az önkormányzat **nettó 238,2 millió Ft-os** vállalkozási szerződést kötött a **Széchenyi tér és a Károlyi utca** felújítására."], "source": "Magyar Építők", "status": "kivitelezes", "summary": "Az önkormányzat nettó 238,2 millió forint értékű vállalkozási szerződést kötött a Széchenyi tér és a Károlyi utca felújítására.", "title": "Megújul Szeged egyik legfontosabb központi területe", "topic": "szeged", "url": "https://magyarepitok.hu/utepites/2026/06/megujul-szeged-egyik-legfontosabb-kozponti-terulete", "word": "Térfelújítás"}, {"added_at": 1792277000000, "date": "2026-10-10", "figs": ["okt. 10."], "lead": "Egynapos lezárás volt, már véget ért:", "location": "Szeged, Szent Ferenc utca (két körforgalom között)", "maps_query": "Szent Ferenc utca, Szeged", "points": ["Október 10-én **8 és 16 óra között** lezárták a Szent Ferenc utca **két körforgalom közötti szakaszát** munkálatok miatt.", "A **20-as, 21-es és 77-es** helyi buszok terelt útvonalon jártak, a Bécsi körút és a Szent Ferenc utca megálló kimaradt."], "source": "mavcsoport.hu", "status": "megszunt", "summary": "A MÁV-csoport közlése szerint október 10-én a Szent Ferenc utca lezárása miatt terelték a 20-as, 21-es és 77-es buszokat.", "title": "Szeged: lezárták a Szent Ferenc utcát, terelve jártak a 20-as, 21-es és 77-es buszok", "topic": "kozlekedes", "url": "https://www.mavcsoport.hu/print/207719", "word": "Buszterelés"}, {"added_at": 1792347609401, "date": "2026-10-16", "figs": ["3 Mrd Ft"], "location": "Szeged, Űrhajós utca", "maps_query": "Űrhajós utca, Szeged", "points": ["A város **3 milliárd Ft**-ot költ útjavításra.", "**Október 16-án** négy újabb helyszínen kezdődött munka, köztük az **Űrhajós utca** elején."], "source": "szeged365.hu", "status": "kivitelezes", "summary": "A város 3 milliárd Ft-ot költ útjavításra.", "title": "Megújul az Űrhajós utca eleje is: négy újabb helyszínen kezdtek útjavításokba Szegeden", "topic": "szeged", "url": "https://szeged365.hu/2026/10/16/javitjak-az-urhajos-utca-elejet-is-negy-ujabb-helyszinen-kezdtek-utjavitasokba-szegeden/", "word": "Útjavítás"}, {"added_at": 1792347653971, "date": "2026-09-14", "figs": ["35 M Ft", "nov. közepe"], "location": "Szeged, Széchenyi tér, Városháza", "maps_query": "Szegedi Városháza", "points": ["A városháza főhomlokzatán **35 millió Ft**-os felújítás kezdődött.", "Restaurálják a díszítőelemeket, és **többrétegű bevonatot** kap a homlokzat.", "A munka **november közepére** készülhet el."], "source": "szeged365.hu", "status": "kivitelezes", "summary": "A városháza főhomlokzatán 35 millió Ft-os felújítás kezdődött.", "title": "Két hónapig állványok mögött a szegedi városháza: 35 milliós felújítás a főhomlokzaton", "topic": "szeged", "url": "https://szeged365.hu/2026/09/14/ket-honapig-allvanyok-moge-bujik-szeged-egyik-legismertebb-epulete-35-millios-felujitas-kezdodott-a-varoshaza-fohomlokzatan/", "word": "Homlokzatfelújítás"}, {"added_at": 1792256400000, "date": "2026-10-16", "figs": ["1,3 Mrd Ft", "2029"], "lead": "A Városházán négy közlekedési és zöldfejlesztést mutattak be:", "location": "Szeged, Nagykörút és Vám téri csomópont", "maps_query": "Vám tér, Szeged", "points": ["A **Nagykörút kerékpáros fejlesztése** 1,3 milliárd Ft támogatást nyert, és **2029 áprilisáig** készülhet el.", "A **Vám téri csomópont** 600 millió Ft támogatásból és nagyjából 355 millió Ft önkormányzati önerőből épülhet meg.", "A **kivitelezési szerződések** többsége **2027-re csúszik**."], "source": "szegeder.hu", "status": "elakadt", "summary": "A város négy közlekedési és zöldfejlesztést mutatott be. A Nagykörút kerékpáros fejlesztése 1,3 milliárd forint támogatást nyert, befejezése 2029 áprilisára várható. A Vám téri csomópont 600 millió forint támogatásból és mintegy 355 millió forint önerőből készülhet. A kivitelezési szerződések többsége 2027-re csúszik.", "title": "Négy beruházást mutatnak be a szegedieknek a Városházán", "topic": "szeged", "url": "https://szegeder.hu/szeged/2026-10-16/negy-beruhazast-mutatnak-be-a-szegedieknek-a-varoshazan/", "word": "Kerékpárút"}, {"added_at": 1792347653972, "date": "2026-10-13", "figs": ["80 megálló"], "location": "Szeged-Szőreg, Szerb utca", "maps_query": "Szerb utca, Szőreg, Szeged", "points": ["A **Szerb utcai** buszmegállók utasvárói újulnak meg Szőregen.", "A munka egy városi program része, amely **80 megállót** érint, és a városi közlekedési cég **saját forrásából** valósul meg."], "source": "szeged365.hu", "status": "kivitelezes", "summary": "A Szerb utcai buszmegállók utasvárói újulnak meg Szőregen.", "title": "Szépül Szőreg: megújulnak a Szerb utcai buszmegállók utasvárói", "topic": "szeged", "url": "https://szeged365.hu/2026/10/13/szepul-szoreg-megujulnak-a-szerb-utcai-buszmegallok-utasvaroi/", "word": "Buszmegálló"}, {"added_at": 1792347609397, "date": "2026-10-12", "figs": ["125 M Ft", "dec. közepe"], "location": "Szeged-Újszeged, Bérkert utca", "maps_query": "Bérkert utca, Szeged", "points": ["Nagyjából **50 éves vezetékeket** cserélnek, nettó **125 millió Ft**-ból.", "A munka **december közepére** készülhet el, addig a Bérkert utcában **marad a forgalomkorlátozás**."], "source": "szeged365.hu", "status": "kivitelezes", "summary": "Nagyjából 50 éves vezetékeket cserélnek, nettó 125 millió Ft-ból.", "title": "Újszeged: 125 millió forintból újul meg a vízvezeték, marad a forgalomkorlátozás a Bérkert utcában", "topic": "szeged", "url": "https://szeged365.hu/2026/10/12/folytatodik-a-munka-ujszegeden-125-millio-forintbol-ujul-meg-a-vizvezetek-marad-a-forgalomkorlatozas-a-berkert-utcaban/", "word": "Vízvezeték"}]</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const TOPICS = [
+    { key: "", label: "Minden" },
+    { key: "szeged", label: "Szeged és környéke", sw: "var(--kresz-blue)" },
+    { key: "melyepites", label: "Mélyépítés, útépítés", sw: "var(--kresz-green)" },
+    { key: "epitoipar", label: "Építőipar", sw: "var(--kresz-brown)" },
+  ];
+  const TOPIC_LABEL = { szeged: "Szeged", melyepites: "Mélyépítés", epitoipar: "Építőipar", kozlekedes: "Szeged" };
+  const STATUS = {
+    koncepcio: ["Koncepció", "Ötlet, bejelentés, tanulmány. Még nincs döntés vagy forrás."],
+    tervezes: ["Tervezés", "Döntés vagy forrás van, tervezés folyik, tender még nincs."],
+    kozbeszerzes: ["Közbeszerzés", "Tender kiírva vagy elbírálás alatt."],
+    kivitelezes: ["Kivitelezés", "Szerződés megkötve, a munka folyik."],
+    atadva: ["Átadva", "Forgalomba helyezve, használatba véve."],
+    elakadt: ["Elakadt", "Csúszik, leállt, eredménytelen tender vagy forráshiány."],
+    lezaras: ["Lezárás", "Teljes útzár, híd- vagy csomópont-lezárás."],
+    tereles: ["Terelés", "Forgalom vagy tömegközlekedés más útvonalon."],
+    korlatozas: ["Korlátozás", "Félpályás, sávszűkítés, sebességkorlátozás, pótlóbusz."],
+    megszunt: ["Megszűnt", "A korlátozás véget ért, a forgalom helyreállt."],
+  };
+  const BUILD_ST = ["koncepcio", "tervezes", "kozbeszerzes", "kivitelezes", "atadva", "elakadt"];
+  const TRAFFIC_ST = ["lezaras", "tereles", "korlatozas", "megszunt"];
+  const LIMIT = 40;
+  const NEW_MS = 3 * 24 * 3600 * 1000;
+  const TABS = [
+    { key: "epites", label: "Építési hírek", match: (d) => d.topic !== "kozlekedes", chips: true,
+      empty: "Ebben a témában még nincs hír. A témafigyelő naponta egyszer, reggel 6-kor gyűjt." },
+    { key: "kozlekedes", label: "Közlekedési hírek", match: (d) => d.topic === "kozlekedes", chips: false,
+      empty: "Még nincs közlekedési hír. Szeged és a közvetlen környék forgalmi hírei a reggeli gyűjtéssel kerülnek ide." },
+    { key: "jelek", label: "Jelmagyarázat", legend: true },
+  ];
+  let items = null, topic = "", tab = "epites";
+  try { topic = localStorage.getItem("hirfal-topic") || ""; tab = localStorage.getItem("hirfal-tab") || tab; } catch (e) {}
+  const hash = (location.hash || "").slice(1);
+  if (TABS.some((t) => t.key === hash)) tab = hash;
+  if (!TABS.some((t) => t.key === tab)) tab = "epites";
+  const curTab = () => TABS.find((t) => t.key === tab);
+
+  function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function sign(id, label) {
+    const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    s.setAttribute("role", "img"); s.setAttribute("aria-label", label);
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "title"); t.textContent = label; s.append(t);
+    const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#s-" + id); s.append(u);
+    return s;
+  }
+  // Points may mark key phrases as **bold**; build nodes, never innerHTML.
+  function rich(node, text) {
+    String(text).split(/(\*\*[^*]+\*\*)/).forEach((part) => {
+      if (/^\*\*[^*]+\*\*$/.test(part)) node.append(el("b", null, part.slice(2, -2)));
+      else if (part) node.append(document.createTextNode(part));
+    });
+    return node;
+  }
+  const MONTHS = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "aug.", "szept.", "okt.", "nov.", "dec."];
+  function fmtDate(s) {
+    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(s || "");
+    if (!m) return s || "";
+    const mon = MONTHS[parseInt(m[2], 10) - 1] || m[2];
+    return m[3] ? mon + " " + parseInt(m[3], 10) + "." : m[1] + ". " + mon;
+  }
+
+  function renderTabs() {
+    const box = $("tabs"); box.replaceChildren();
+    for (const t of TABS) {
+      const b = el("button", "tab", t.label); b.type = "button"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(t.key === tab));
+      if (items && t.match) b.append(el("span", "n", String(items.filter(t.match).length)));
+      b.addEventListener("click", () => { tab = t.key; try { localStorage.setItem("hirfal-tab", tab); } catch (e) {} render(); });
+      box.append(b);
+    }
+  }
+
+  function renderChips() {
+    const box = $("chips"); box.replaceChildren();
+    for (const t of TOPICS) {
+      const b = el("button", "chip"); b.type = "button";
+      if (t.sw) { const i = el("i"); i.style.background = t.sw; b.append(i); }
+      b.append(document.createTextNode(t.label));
+      b.setAttribute("aria-pressed", String(t.key === topic));
+      if (items) b.append(el("span", "n", String(items.filter(curTab().match).filter((d) => !t.key || d.topic === t.key).slice(0, LIMIT).length)));
+      b.addEventListener("click", () => { topic = t.key; try { localStorage.setItem("hirfal-topic", topic); } catch (e) {} render(); });
+      box.append(b);
+    }
+  }
+
+  function card(d, now) {
+    const art = el("article", "sg " + (d.topic || ""));
+    const band = el("div", "band");
+    const bl = el("div", "bl");
+    bl.append(el("span", null, TOPIC_LABEL[d.topic] || d.topic || ""));
+    if (d.location) {
+      const a = el("a", null, d.location);
+      a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(d.maps_query || d.location);
+      a.target = "_blank"; a.rel = "noopener"; a.title = "Megnyitás a Google Térképen";
+      bl.append(a);
+    }
+    const br = el("div", "br");
+    br.append(el("span", null, fmtDate(d.date)));
+    if (d.added_at && now - d.added_at < NEW_MS) br.append(el("span", "sticker", "ÚJ"));
+    band.append(bl, br);
+    art.append(band);
+
+    const inner = el("div", "inner");
+    if (d.word || d.status || (d.figs && d.figs.length)) {
+      const top = el("div", "top");
+      const w = el("div"); if (d.word) { w.className = "word"; w.textContent = d.word; }
+      const st = el("div", "st");
+      if (STATUS[d.status]) { st.append(sign(d.status, STATUS[d.status][0]), el("span", "stxt", STATUS[d.status][0])); }
+      const figs = el("div", "figs");
+      (Array.isArray(d.figs) ? d.figs : []).slice(0, 2).forEach((f) => figs.append(el("span", "fig", f)));
+      top.append(w, st, figs);
+      inner.append(top);
+    }
+    const h = el("h3");
+    const a = el("a", null, d.title || "(cím nélkül)");
+    if (d.url) { a.href = d.url; a.target = "_blank"; a.rel = "noopener"; }
+    h.append(a); inner.append(h);
+    if (Array.isArray(d.points) && d.points.length) {
+      if (d.lead) inner.append(el("p", "lead", d.lead));
+      const ul = el("ul");
+      for (const p of d.points) ul.append(rich(el("li"), p));
+      inner.append(ul);
+    } else if (d.summary) inner.append(el("p", "sum", d.summary));
+    if (d.source) inner.append(el("div", "src", d.source));
+    art.append(inner);
+    return art;
+  }
+
+  function renderLegend() {
+    const box = $("legend"); box.replaceChildren();
+    const sec = (title, note, rows) => {
+      const s = el("section", "legend-sec"); s.append(el("h2", null, title));
+      if (note) s.append(el("p", "note", note));
+      const g = el("div", "legend"); rows.forEach((r) => g.append(r)); s.append(g); return s;
+    };
+    const stRow = (k) => { const r = el("div", "lg"); r.append(sign(k, STATUS[k][0]), el("b", null, STATUS[k][0]), el("span", null, STATUS[k][1])); return r; };
+    const swRow = (c, n, txt) => { const r = el("div", "lg"); const s = el("div", "sw"); s.style.background = c; r.append(s, el("b", null, n), el("span", null, txt)); return r; };
+    box.append(
+      sec("Építési állapotok", "Minden hír legfeljebb egy jelzőt kap, a forrás alapján. Ha a forrásból nem derül ki, nem kap jelzőt.", BUILD_ST.map(stRow)),
+      sec("Közlekedési állapotok", null, TRAFFIC_ST.map(stRow)),
+      sec("A kártya részei", null, [
+        swRow("var(--kresz-blue)", "Kék sáv", "Szeged és környéke, a közlekedési hírek is."),
+        swRow("var(--kresz-green)", "Zöld sáv", "Országos mélyépítés, út, vasút."),
+        swRow("var(--kresz-brown)", "Barna sáv", "Építőipar."),
+        swRow("var(--kresz-yellow)", "Sárga szám", "Összeg, hossz vagy dátum a forrásból."),
+        swRow("var(--kresz-red)", "Új matrica", "Az elmúlt 3 napban került fel."),
+      ])
+    );
+  }
+
+  function render() {
+    const t = curTab();
+    renderTabs();
+    $("chips").hidden = !t.chips;
+    if (t.chips) renderChips();
+    $("legend").hidden = !t.legend;
+    $("news").hidden = !!t.legend;
+    $("foot").hidden = !!t.legend;
+    const list = $("news"); list.replaceChildren();
+    if (t.legend) { $("empty").hidden = true; renderLegend(); return; }
+    const shown = (items || []).filter(t.match).filter((d) => !t.chips || !topic || d.topic === topic).slice(0, LIMIT);
+    $("empty").textContent = t.empty;
+    $("empty").hidden = !items || shown.length > 0;
+    const now = Date.now();
+    for (const d of shown) list.append(card(d, now));
+  }
+
+  // Static build: the news are baked into the page at build time.
+  items = JSON.parse(document.getElementById("hirfal-data").textContent)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || (b.added_at || 0) - (a.added_at || 0));
+  const last = items.reduce((m, d) => Math.max(m, d.added_at || 0), 0);
+  $("meta").textContent = items.length ? "Utolsó frissítés: " + new Date(last).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Még nincs hír.";
+  render();
+})();
+</script>
+
+</body>
+</html>
